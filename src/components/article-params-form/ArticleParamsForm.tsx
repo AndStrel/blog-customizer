@@ -10,11 +10,14 @@ import {
 	ArticleStateType,
 	backgroundColors,
 	contentWidthArr,
+	defaultArticleState,
 	fontColors,
 	fontFamilyOptions,
 	fontSizeOptions,
 } from 'src/constants/articleProps';
 import { Text } from 'components/text';
+import { useClose } from './hooks/useClose';
+import clsx from 'clsx';
 export type TOpenMenu = () => void;
 export type TArticleParamsFormProps = {
 	handleSetArticleState: (newArticleState: ArticleStateType) => void;
@@ -32,22 +35,31 @@ export const ArticleParamsForm = ({
 	const [fontColor, setFontColor] = useState(fontColors[0]); // состояние выбора цвета шрифта
 	const [backgroundColor, setBackgroundColor] = useState(backgroundColors[0]); // состояние выбора цвета фона
 	const [contentWidth, setContentWidth] = useState(contentWidthArr[0]); // состояние выбора ширины контента
+	const [isChange, setIsChange] = useState(false); // состояние изменения параметров
+
+	useClose({
+		isOpen: isMenuOpen,
+		onClose: () => toggleMenu(),
+		rootRef: menuRef,
+	});
+
 	useEffect(() => {
-		const handleClickOutside = (e: MouseEvent) => {
-			// Проверяем, что клик произошел вне меню и самого триггера открытия
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-				toggleMenu(); // меняем состояние меню
+		// функция проверки изменения параметров
+		const checkChangeState = () => {
+			if (
+				fontFamily === fontFamilyOptions[0] &&
+				fontSize === fontSizeOptions[0] &&
+				fontColor === fontColors[0] &&
+				backgroundColor === backgroundColors[0] &&
+				contentWidth === contentWidthArr[0]
+			) {
+				setIsChange(false);
+			} else {
+				setIsChange(true);
 			}
 		};
-		if (isMenuOpen) {
-			document.addEventListener('mousedown', handleClickOutside); // добавляем обработчик события клика в документ
-		} else {
-			document.removeEventListener('mousedown', handleClickOutside); // удаляем обработчик события клика при закрытии меню
-		}
-		return () => {
-			document.removeEventListener('mousedown', handleClickOutside); // удаляем обработчик события клика при размонтировании компонента
-		};
-	}, [isMenuOpen]); // аргумент - зависимость от меню, при смене его состояния вызываем useEffect
+		checkChangeState(); // проверяем состояние при изменении любого из параметров
+	}, [fontFamily, fontSize, fontColor, backgroundColor, contentWidth]);
 
 	// функция смены состояния меню
 	const toggleMenu = () => {
@@ -62,8 +74,7 @@ export const ArticleParamsForm = ({
 	// функция открытия меню
 	const openMenu = () => {
 		if (menuRef.current) {
-			menuRef.current.className =
-				styles.container + ' ' + styles.container_open;
+			menuRef.current.className = clsx(styles.container, styles.container_open);
 		}
 	};
 
@@ -88,12 +99,14 @@ export const ArticleParamsForm = ({
 
 	// функция сброса параметров в форме
 	const handleReset = () => {
-		setFontFamily(fontFamilyOptions[0]);
-		setFontSize(fontSizeOptions[0]);
-		setFontColor(fontColors[0]);
-		setBackgroundColor(backgroundColors[0]);
-		setContentWidth(contentWidthArr[0]);
-		handleResetArticleState();
+		if (isChange === true) {
+			setFontFamily(defaultArticleState.fontFamilyOption);
+			setFontSize(defaultArticleState.fontSizeOption);
+			setFontColor(defaultArticleState.fontColor);
+			setBackgroundColor(defaultArticleState.backgroundColor);
+			setContentWidth(defaultArticleState.contentWidth);
+			handleResetArticleState();
+		}
 	};
 
 	return (
